@@ -95,17 +95,18 @@ async def receive_message(request: Request):
                     send_reply(sender, "Generating your payment link... please wait 💬")
 
                     try:
-                        pay_response = requests.post(
-                            "https://fastapi-render-deploy-qv0j.onrender.com/pay/initiate",
-                            json={"email": email, "amount": amount},
-                            timeout=20
-                        )
-                        result = pay_response.json()
-                        if result.get("status") == "success":
-                            link = result["authorization_url"]
+                        headers = {
+                            "Authorization": f"Bearer {os.getenv('PAYSTACK_SECRET_KEY')}",
+                            "Content-Type": "application/json"
+                        }
+                        payload = {"email": email, "amount": int(amount) * 100}
+                        response = requests.post("https://api.paystack.co/transaction/initialize", headers=headers, json=payload, timeout=15)
+                        data = response.json()
+                        if data.get("status"):
+                            link = data["data"]["authorization_url"]
                             send_reply(sender, f"✅ Here is your secure payment link:\n{link}\n\nPlease complete your payment to activate your plan.")
                         else:
-                            send_reply(sender, "⚠️ Sorry, I couldn’t create your payment link. Please try again.")
+                            send_reply(sender, "⚠️ Could not generate payment link. Please try again.")
                     except Exception as e:
                         print("Payment initiation error:", e)
                         send_reply(sender, "⚠️ Something went wrong while creating your payment link.")
@@ -114,6 +115,26 @@ async def receive_message(request: Request):
                     user_sessions[sender] = {"stage": "start"}
                     continue
 
+                    # try:
+                    #     pay_response = requests.post(
+                    #         "https://fastapi-render-deploy-qv0j.onrender.com/pay/initiate",
+                    #         json={"email": email, "amount": amount},
+                    #         timeout=20
+                    #     )
+                    #     result = pay_response.json()
+                    #     if result.get("status") == "success":
+                    #         link = result["authorization_url"]
+                    #         send_reply(sender, f"✅ Here is your secure payment link:\n{link}\n\nPlease complete your payment to activate your plan.")
+                    #     else:
+                    #         send_reply(sender, "⚠️ Sorry, I couldn’t create your payment link. Please try again.")
+                    # except Exception as e:
+                    #     print("Payment initiation error:", e)
+                    #     send_reply(sender, "⚠️ Something went wrong while creating your payment link.")
+
+                    # # Reset session after sending payment link
+                    # user_sessions[sender] = {"stage": "start"}
+                    # continue
+                    
                 # --- Fallback to AI for other messages ---
                 ai_reply = get_ai_reply(text)
                 send_reply(sender, ai_reply)
