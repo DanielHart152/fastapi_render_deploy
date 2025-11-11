@@ -9,7 +9,9 @@ load_dotenv()
 print("PAYSTACK_SECRET_KEY:", os.getenv("PAYSTACK_SECRET_KEY"))
 print("PAYSTACK_BASE:", os.getenv("PAYSTACK_BASE"))
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=OPENAI_API_KEY)
+
+# Initialize OpenAI client only when needed
+client = None
 
 VERIFY_TOKEN = "mysecuretoken1475"
 ACCESS_TOKEN = "EAAbbSke4OukBP6adhLvkNxolN5UgeoMZAhJDdtiniqThcqN6qyZAEZBkcia2DKxzHpSopQxLb5qTAvNpYREyjK1FAYZA3IyH58VSASbscsMtKmK56aYEArSqta4Y3UXSZBJtI73urqHKNWN2lOVb7qHpTDh1NFZCID6ReHUZA2mCqAPk8NsYLLIovLuT2uPcoqNIFE3blZBgQVHkZCx2jXOPXLevqL6aMN38SUVrukj4ISpZBhuEwpNy2vLy7iEnG8KSe3dyVMZCPROQTs1nHjK0gfP9YKOLPqG88iSQgZDZD"
@@ -175,6 +177,10 @@ async def paystack_webhook(request: Request):
 
 def get_ai_reply(user_message):
     try:
+        global client
+        if client is None:
+            client = OpenAI(api_key=OPENAI_API_KEY)
+            
         data_plans = """
         🔴 *Available Internet Plans* (All Prices in ₦aira):
         • 1️⃣ One-day, 12-hour unlimited – ₦250
