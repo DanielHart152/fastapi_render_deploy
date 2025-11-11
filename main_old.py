@@ -18,7 +18,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = None
 
 VERIFY_TOKEN = "mysecuretoken1475"
-ACCESS_TOKEN = "EAAbbSke4OukBP1mzBarAmP7uywQo3yq6JzE9AC6ZB24H3UJAcZAaZCkkFwtedU38p8XmmuM4lOZCDy0UbO79QWPLbf19hb2yVEFBo5QSscdMgPOxUJikyfFxzfws5pGljKOxeMSa2ajm0fvy3ylpwUXHtB0RfZCStpDtnpMHVZCbBcQJSsTZAMKO5fMKrOmc7w60eZC1T58xwmEE1EsHiqkcowiO9A24r0P9X7f4XxDhh5Ruvmbn1HQ8D1cPyZANuakuGkkQxFo0a9FWE8xKrXGssuHNNZBaeNPDruJQZDZD"
+ACCESS_TOKEN = "EAAbbSke4OukBPy7tJmn08WeQNZBeDUnUOYc3rTZAVW0kOji0f21usd5S8TL1xYuUZBldjCS7pC1b2FPZBrOmVYq0cbPQopZBsMFDP0SKRNixKyWT3bQ1OIKugsGIlCMpGkkW3zeX2T00yN0LyrIXzstjmanB6fEI9LYF0pmPrDEpbVHmnYZCWUiABf4kCRgZCQXNAVpAtiubyeyNVAZADZCDJ7eBRd2lyqLh8IXcbgBegmVZCxGPUPphdObvoZAGg0MRIH8XANVYyMR6lyVQrUKC7VncveBFfwV3ZCZB5QwZDZD"
 PHONE_NUMBER_ID = "239491695904026"
 
 processed_messages = set()
@@ -96,7 +96,7 @@ async def receive_message(request: Request):
 
                     try:
                         pay_response = requests.post(
-                            "https://fastapi-render-deploy-qv0j.onrender.com/pay/initiate",
+                            "http://54.200.235.123:8000/pay/initiate",
                             json={"email": email, "amount": amount},
                             timeout=20
                         )
