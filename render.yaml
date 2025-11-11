@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: chafinity-webhook
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_BASE
+        value: https://api.paystack.co
+      - key: GUEST_API_URL
+        value: https://demo.guest-internet.com/api/
