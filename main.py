@@ -5,6 +5,10 @@ from openai import OpenAI
 
 app = FastAPI()
 
+@app.get("/")
+async def root():
+    return {"message": "Chafinity WhatsApp Bot is running!"}
+
 load_dotenv()
 print("PAYSTACK_SECRET_KEY:", os.getenv("PAYSTACK_SECRET_KEY"))
 print("PAYSTACK_BASE:", os.getenv("PAYSTACK_BASE"))
