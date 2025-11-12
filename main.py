@@ -19,7 +19,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = None
 
 VERIFY_TOKEN = "mysecuretoken1475"
-ACCESS_TOKEN = "EAAbbSke4OukBPZBGBK3JOJToTypJPZB32iQv9fKbshSrRrLpiwAZCveEvBOgiQtNtZA0afZAIO2D0z62J9pZAZC4Ix3ZCJVsImkJutf7WSVzuVKjBYtO5gSBCoiPhUzFazrZCNkE3bi3lxuoiZCF9WjLEid7mH5Otl2xzyWjO2eqnNFtmcKQyik9pK6K0rEa6kMkwJ1fSWZAv3kz4ZBNF137T4v6g2UgcnAa0nL66RESEK1fAsixhzcZClZAEA7dVs9XYXeuZAMnmsFAaXBU9Mml2BuTZACZATKE9CBFCtHTreNUZD"
+ACCESS_TOKEN = "EAAbbSke4OukBPyfCi7FQ3ZAhefgzyxFcZBCESjEjTL04DZA6UWHkyboPLnfvQPb4BfGKSf53TPUxdVlgT8VuvxxlYHMEdhDixHeoi6Hq31wYvbnh0i6C5EnCCgBdNUSktqSe5w7AZBhWRDmRZBdpOvR5a9h0QuzH1YNZCCknfXleJTp9GWmrmGWkGCKCFVHsdZCoAGsMXM92jkRrrEORTPRbF4QqPQLUzyMY0oqpngKU4oKuKIuT8fKGySFnW3B24jpMKffyW6dh2YL2NFemEivJ6nZC7V2xPlIVj3QZD"
 PHONE_NUMBER_ID = "239491695904026"
 
 processed_messages = set()
@@ -192,6 +192,7 @@ async def paystack_webhook(request: Request):
     secret = os.getenv("PAYSTACK_SECRET_KEY")
     computed_sig = hmac.new(secret.encode(), msg=payload, digestmod=hashlib.sha512).hexdigest()
     if sig != computed_sig:
+        print("Invalid signature received")
         return {"error": "Invalid signature"}
 
     data = json.loads(payload)
@@ -218,51 +219,51 @@ async def paystack_webhook(request: Request):
 
                 # map plan amount to duration in minutes
                 plan_minutes = {
-                    250: 12*60,   # 12 hours
-                    450: 24*60,   # 24 hours
-                    1000: 3*24*60,# 3 days
-                    1500: 7*24*60,# 1 week
-                    8000: 7*24*60,# heavy – same duration, different speed/limits server-side
-                    4000: 30*24*60,# 1 month approx
-                    1000: 30*24*60,# POS month
-                    20000: 30*24*60,# market device
-                    25000: 30*24*60 # home unlimited
+                    250: 12*60, 450: 24*60, 1000: 3*24*60, 1500: 7*24*60,
+                    8000: 7*24*60, 4000: 30*24*60, 1000: 30*24*60,
+                    20000: 30*24*60, 25000: 30*24*60
                 }
+
                 minutes = plan_minutes.get(plan, 24*60)
                 now = datetime.utcnow()
                 start = now.strftime("%Y-%m-%d %H:%M:%S")
                 end = (now + timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M:%S")
                 payload = {"addcode": {"start": start, "end": end}}
 
-                resp = requests.post("https://demo.guest-internet.com/api/", headers=headers, json=payload, timeout=15)
-                wifi_response = resp.json()
-                print("Guest Internet Response:", wifi_response)
+                print("Guest Internet payload:", payload)
+                print("Guest Internet headers:", {k: v for k, v in headers.items() if v})
+                resp = requests.post("https://demo.guest-internet.com/api/", headers=headers, json=payload, timeout=20)
+                print("Guest Internet status:", resp.status_code)
+                print("Guest Internet raw response:", resp.text)
 
-                # accept either {"addcode": {...}} or {"codes": [ {...} ]}
+                wifi_response = None
+                try:
+                    wifi_response = resp.json()
+                except Exception as e:
+                    print("JSON decode error:", e)
+
                 code = None
-                if "addcode" in wifi_response and isinstance(wifi_response["addcode"], dict):
-                    code = wifi_response["addcode"].get("code")
-                elif "codes" in wifi_response and isinstance(wifi_response["codes"], list) and wifi_response["codes"]:
-                    code = wifi_response["codes"][0].get("code")
+                if isinstance(wifi_response, dict):
+                    if "addcode" in wifi_response and isinstance(wifi_response["addcode"], dict):
+                        code = wifi_response["addcode"].get("code")
+                    elif "codes" in wifi_response and isinstance(wifi_response["codes"], list) and wifi_response["codes"]:
+                        code = wifi_response["codes"][0].get("code")
 
                 if code:
                     send_reply(sender, f"✅ Payment of ₦{amount} confirmed. Your WiFi code is {code}. Enjoy your connection 📶")
                 else:
+                    print("No WiFi code found in response:", wifi_response)
                     send_reply(sender, "✅ Payment confirmed, but failed to generate WiFi code. Please contact support.")
+
             except Exception as e:
-                print("WiFi code generation error:", e)
+                print("WiFi code generation exception:", e)
                 send_reply(sender, "✅ Payment confirmed, but there was an issue generating your access code.")
+
             payments.pop(ref, None)
         else:
             print("Payment confirmed but no mapping found for reference:", ref)
-                    
-        # email = data["data"]["customer"]["email"]
-        # amount = data["data"]["amount"] / 100
-        # print(f"✅ Payment successful from {email} for ₦{amount}")
-        # # You can now trigger plan activation or WiFi code delivery here.
 
     return {"status": "ok"}
-
 
 def get_ai_reply(user_message):
     try:
