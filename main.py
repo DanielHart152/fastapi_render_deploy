@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 import requests, json, os, hashlib, hmac
 from dotenv import load_dotenv
 from openai import OpenAI
+from datetime import datetime, timedelta
 
 app = FastAPI()
 
@@ -23,6 +24,7 @@ PHONE_NUMBER_ID = "239491695904026"
 
 processed_messages = set()
 user_sessions = {}  # Track conversation states per user
+payments = {}
 
 
 @app.get("/webhook")
@@ -103,8 +105,12 @@ async def receive_message(request: Request):
                         response = requests.post("https://api.paystack.co/transaction/initialize", headers=headers, json=payload, timeout=15)
                         data = response.json()
                         if data.get("status"):
+                            ref = data["data"]["reference"]
+                            payments[ref] = {"sender": sender, "plan": amount, "email": email}
                             link = data["data"]["authorization_url"]
-                            send_reply(sender, f"✅ Here is your secure payment link:\n{link}\n\nPlease complete your payment to activate your plan.")
+                            send_reply(sender, f"✅ Here is your secure payment link:\n{link}\n\nPlease complete payment to activate your plan.")
+                            # link = data["data"]["authorization_url"]
+                            # send_reply(sender, f"✅ Here is your secure payment link:\n{link}\n\nPlease complete your payment to activate your plan.")
                         else:
                             send_reply(sender, "⚠️ Could not generate payment link. Please try again.")
                     except Exception as e:
@@ -192,10 +198,68 @@ async def paystack_webhook(request: Request):
     print("Webhook received:", json.dumps(data, indent=2))
 
     if data.get("event") == "charge.success":
-        email = data["data"]["customer"]["email"]
+        ref = data["data"]["reference"]
         amount = data["data"]["amount"] / 100
-        print(f"✅ Payment successful from {email} for ₦{amount}")
-        # You can now trigger plan activation or WiFi code delivery here.
+        customer_email = data["data"]["customer"]["email"]
+        info = payments.get(ref) or next((v for v in payments.values() if v.get("email") == customer_email), None)
+
+        if info:
+            sender = info["sender"]
+            plan = info["plan"]
+
+            # --- Generate WiFi access code from Guest Internet API ---
+            try:
+                headers = {
+                    "cloud-key": os.getenv("CLOUD_KEY"),
+                    "gateway-id": os.getenv("GATEWAY_ID"),
+                    "group-id": os.getenv("GROUP_ID"),
+                    "Content-Type": "application/json"
+                }
+
+                # map plan amount to duration in minutes
+                plan_minutes = {
+                    250: 12*60,   # 12 hours
+                    450: 24*60,   # 24 hours
+                    1000: 3*24*60,# 3 days
+                    1500: 7*24*60,# 1 week
+                    8000: 7*24*60,# heavy – same duration, different speed/limits server-side
+                    4000: 30*24*60,# 1 month approx
+                    1000: 30*24*60,# POS month
+                    20000: 30*24*60,# market device
+                    25000: 30*24*60 # home unlimited
+                }
+                minutes = plan_minutes.get(plan, 24*60)
+                now = datetime.utcnow()
+                start = now.strftime("%Y-%m-%d %H:%M:%S")
+                end = (now + timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M:%S")
+                payload = {"addcode": {"start": start, "end": end}}
+
+                resp = requests.post("https://demo.guest-internet.com/api/", headers=headers, json=payload, timeout=15)
+                wifi_response = resp.json()
+                print("Guest Internet Response:", wifi_response)
+
+                # accept either {"addcode": {...}} or {"codes": [ {...} ]}
+                code = None
+                if "addcode" in wifi_response and isinstance(wifi_response["addcode"], dict):
+                    code = wifi_response["addcode"].get("code")
+                elif "codes" in wifi_response and isinstance(wifi_response["codes"], list) and wifi_response["codes"]:
+                    code = wifi_response["codes"][0].get("code")
+
+                if code:
+                    send_reply(sender, f"✅ Payment of ₦{amount} confirmed. Your WiFi code is {code}. Enjoy your connection 📶")
+                else:
+                    send_reply(sender, "✅ Payment confirmed, but failed to generate WiFi code. Please contact support.")
+            except Exception as e:
+                print("WiFi code generation error:", e)
+                send_reply(sender, "✅ Payment confirmed, but there was an issue generating your access code.")
+            payments.pop(ref, None)
+        else:
+            print("Payment confirmed but no mapping found for reference:", ref)
+                    
+        # email = data["data"]["customer"]["email"]
+        # amount = data["data"]["amount"] / 100
+        # print(f"✅ Payment successful from {email} for ₦{amount}")
+        # # You can now trigger plan activation or WiFi code delivery here.
 
     return {"status": "ok"}
 
