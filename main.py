@@ -3,6 +3,8 @@ import requests, json, os, hashlib, hmac, re, time
 from dotenv import load_dotenv
 from openai import OpenAI
 from datetime import datetime, timedelta
+import httpx
+
 
 app = FastAPI()
 
@@ -18,7 +20,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = None
 
 VERIFY_TOKEN = "mysecuretoken1475"
-ACCESS_TOKEN = "EAAbbSke4OukBP7XDWSQ4a0Oy2hp1SZAHrq0KnmJtkE6d1GmAbvDL3CcW7JveunKTZATPPnDGfyjoHrpierRw3EjrbtspdXFyUlc32M6NX6OoVTQ5JsZANkLj2utOZCmHs1kmNn7bgxUBxBt9nnb9vjUeUxBRdGMNJuFvBzpUOhAnZBsSIHgEbq2s8tG1OpEgvboEyEPchxVSKjW8M679019XBTf7CrwMQCWXBHEq76iHxqC1ZBop2L3cEawmGL"
+ACCESS_TOKEN = "EAAbbSke4OukBPxqRlDbZB7IzUsoewE1dKK86ZCqThuWTagUvF5n3cP5z9IBgxWn00MTE7cs81VwcvSYqKKLOUl1X8gGGvdqjHSy8ZBMXl1op6sniqlr7z4KvtKr0nPz9hCLWwBh4GnORi6u0xf6t2wR7uc3i0YiC2Ml78eQAQMZBp5nfiGNvpvYDRZA28jlWnwjzfLgyBjRMXjultsYEeV2wdrkG71aJnup2OTH6vHllX2xDDvv5evsHAQwZDZD"
 PHONE_NUMBER_ID = "885195624673209"
 
 PAYSTACK_SECRET = os.getenv("PAYSTACK_SECRET_KEY")
@@ -162,44 +164,33 @@ async def receive_message(request: Request):
 
 def get_ai_reply(conversation, user_message):
     global client
-    
-    # Fix Render proxy injection
+
+    # Extra: remove Render's proxy variables (still useful)
     for var in ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"]:
         os.environ.pop(var, None)
-        
+
     if client is None:
         try:
+            import httpx
+            http_client = httpx.Client(trust_env=False)  # <- CRUCIAL FIX
             client = OpenAI(
                 api_key=OPENAI_API_KEY,
+                http_client=http_client,
                 timeout=30.0
             )
         except TypeError as e:
             print(f"OpenAI client initialization error: {e}")
-            # Fallback initialization without any optional parameters
             client = OpenAI(api_key=OPENAI_API_KEY)
-        
+
     system_prompt = (
-        "You are Chafinity 📶, a warm, friendly Nigerian WiFi assistant. "
-        "You sound human — not robotic. You only greet naturally once, "
-        "then continue conversations casually and kindly. "
-        "Use Nigerian English and light Pidgin sometimes, with a touch of humor. "
-        "You handle questions about WiFi plans, prices, and purchases naturally. "
-        "If a user mentions another city or country such as Kyiv or London, politely inform them that service is not yet available there. "
-        "When the user chooses a plan and wants to buy, ALWAYS ask them to confirm with BOTH their email and the plan price in one message, like: email@gmail.com 1000. "
-        "When the user sends both email + price correctly, confirm and say you’re generating the payment link. "
-        "When users say thanks or small talk, reply naturally. "
-        "Use friendly emojis like 🔴, 📶, 💬, and ✅ when suitable. "
-        "Available plans:\n"
-        "1️⃣ ₦250 (12h)\n2️⃣ ₦450 (24h)\n3️⃣ ₦1000 (3 days)\n4️⃣ ₦1500 (1 week)\n"
-        "5️⃣ ₦8000 (1 week heavy)\n6️⃣ ₦4000 (1 month)\n7️⃣ ₦1000 (1 month POS)\n"
-        "8️⃣ ₦20000 (market device)\n9️⃣ ₦25000 (home unlimited)\n"
-        "Be conversational, funny sometimes, and never repeat same intro."
+        "You are Chafinity 📶, a warm, friendly Nigerian WiFi assistant..."
+        # (keep the rest)
     )
 
-    # Keep short memory for efficiency
     conversation = conversation[-10:]
 
     messages = [{"role": "system", "content": system_prompt}] + conversation
+
     try:
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
