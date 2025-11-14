@@ -162,6 +162,11 @@ async def receive_message(request: Request):
 
 def get_ai_reply(conversation, user_message):
     global client
+    
+    # Fix Render proxy injection
+    for var in ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"]:
+        os.environ.pop(var, None)
+        
     if client is None:
         try:
             client = OpenAI(
