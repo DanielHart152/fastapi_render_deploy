@@ -106,7 +106,26 @@ async def receive_message(request: Request):
                         sender,
                         f"Perfect! Email {email} and price ₦{amount} confirmed. Generating your secure payment link... 💬"
                     )
-                    initiate_payment(sender, email, amount)
+                    
+                    try:
+                        headers = {
+                            "Authorization": f"Bearer {os.getenv('PAYSTACK_SECRET_KEY')}",
+                            "Content-Type": "application/json"
+                        }
+                        payload = {"email": email, "amount": int(amount) * 100}
+                        response = requests.post("https://api.paystack.co/transaction/initialize", headers=headers, json=payload, timeout=15)
+                        data = response.json()
+                        if data.get("status"):
+                            ref = data["data"]["reference"]
+                            payments[ref] = {"sender": sender, "plan": amount, "email": email}
+                            link = data["data"]["authorization_url"]
+                            send_reply(sender, f"✅ Here is your secure payment link:\n{link}\n\nPlease complete payment to activate your plan.")
+                        else:
+                            send_reply(sender, "⚠️ Could not generate payment link. Please try again.")
+                    except Exception as e:
+                        print("Payment initiation error:", e)
+                        send_reply(sender, "⚠️ Something went wrong while creating your payment link.")
+                    
                     continue
 
                 # CASE 2: User sends ONLY email
