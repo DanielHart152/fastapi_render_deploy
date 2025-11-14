@@ -20,7 +20,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = None
 
 VERIFY_TOKEN = "mysecuretoken1475"
-ACCESS_TOKEN = "EAAbbSke4OukBPxqRlDbZB7IzUsoewE1dKK86ZCqThuWTagUvF5n3cP5z9IBgxWn00MTE7cs81VwcvSYqKKLOUl1X8gGGvdqjHSy8ZBMXl1op6sniqlr7z4KvtKr0nPz9hCLWwBh4GnORi6u0xf6t2wR7uc3i0YiC2Ml78eQAQMZBp5nfiGNvpvYDRZA28jlWnwjzfLgyBjRMXjultsYEeV2wdrkG71aJnup2OTH6vHllX2xDDvv5evsHAQwZDZD"
+ACCESS_TOKEN = "EAAbbSke4OukBP7uSF8yBaQPlJTvxLvkTvIGOpMpoZA8nS8mHpx3ZCXfRbLIYaGTvaVLP0olGYBq6hucLKaEQqpBD2L6wk0gKr7T6x6DHsvyZC0AJq7WykNbUk6D9ZCT7RtoMnDSNn0M94M4EO4RtZBTKYwVbj2q1WR694Wc7HQy1HrUPqx92JzlqA1Bdod5mzi2eCkXLRTlzRVnqTeKgo7CWFVSYplfJocbSeNOuZBcyae7OVY30H6j7XO6AZDZD"
 PHONE_NUMBER_ID = "885195624673209"
 
 PAYSTACK_SECRET = os.getenv("PAYSTACK_SECRET_KEY")
@@ -98,21 +98,23 @@ async def receive_message(request: Request):
                 price_found = re.search(price_pattern, text)
 
                 # CASE 1: User sends BOTH email + price in same message (valid)
-                if email_found and price_found:
-                    email = email_found.group(0)
-                    amount = int(price_found.group(0))
+                email_pattern = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
+                price_pattern = r"\b(250|450|1000|1500|8000|4000|20000|25000)\b"
 
-                    send_reply(
-                        sender,
-                        f"Perfect! Email {email} and price ₦{amount} confirmed. Generating your secure payment link... 💬"
-                    )
-                    
+                email_found = re.search(email_pattern, text)
+                price_found = re.search(price_pattern, text)
+
+                if email_found and price_found:
+                    email = email_found.group(0).strip()
+                    amount = int(price_found.group(0))
+                    send_reply(sender, f"Perfect! Email {email} and price ₦{amount} confirmed. Generating your secure payment link... 💬")
+
                     try:
                         headers = {
                             "Authorization": f"Bearer {os.getenv('PAYSTACK_SECRET_KEY')}",
                             "Content-Type": "application/json"
                         }
-                        payload = {"email": "chafinitywifi@gmail.com", "amount": 4000 * 100}
+                        payload = {"email": email, "amount": int(amount) * 100}
                         response = requests.post("https://api.paystack.co/transaction/initialize", headers=headers, json=payload, timeout=15)
                         data = response.json()
                         if data.get("status"):
