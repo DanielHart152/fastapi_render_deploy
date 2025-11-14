@@ -112,7 +112,7 @@ async def receive_message(request: Request):
                             "Authorization": f"Bearer {os.getenv('PAYSTACK_SECRET_KEY')}",
                             "Content-Type": "application/json"
                         }
-                        payload = {"email": email, "amount": int(amount) * 100}
+                        payload = {"email": "chafinitywifi@gmail.com", "amount": 4000 * 100}
                         response = requests.post("https://api.paystack.co/transaction/initialize", headers=headers, json=payload, timeout=15)
                         data = response.json()
                         if data.get("status"):
