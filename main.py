@@ -163,12 +163,7 @@ async def receive_message(request: Request):
 def get_ai_reply(conversation, user_message):
     global client
     if client is None:
-        try:
-            client = OpenAI(api_key=OPENAI_API_KEY)
-        except TypeError as e:
-            print(f"OpenAI client init error: {e}")
-            # Fallback initialization
-            client = OpenAI(api_key=OPENAI_API_KEY)
+        client = OpenAI(api_key=OPENAI_API_KEY)
         
     system_prompt = (
         "You are Chafinity 📶, a warm, friendly Nigerian WiFi assistant. "
@@ -191,7 +186,7 @@ def get_ai_reply(conversation, user_message):
     # Keep short memory for efficiency
     conversation = conversation[-10:]
 
-    messages = [{"role": "system", "content": system_prompt}] + conversation + [{"role": "user", "content": user_message}]
+    messages = [{"role": "system", "content": system_prompt}] + conversation
     try:
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
