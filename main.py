@@ -163,7 +163,15 @@ async def receive_message(request: Request):
 def get_ai_reply(conversation, user_message):
     global client
     if client is None:
-        client = OpenAI(api_key=OPENAI_API_KEY)
+        try:
+            client = OpenAI(
+                api_key=OPENAI_API_KEY,
+                timeout=30.0
+            )
+        except TypeError as e:
+            print(f"OpenAI client initialization error: {e}")
+            # Fallback initialization without any optional parameters
+            client = OpenAI(api_key=OPENAI_API_KEY)
         
     system_prompt = (
         "You are Chafinity 📶, a warm, friendly Nigerian WiFi assistant. "
