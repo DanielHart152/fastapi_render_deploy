@@ -86,7 +86,7 @@ async def receive_message(request: Request):
                 # --- Handle greeting message (sent only once) ---
                 if not session["greeting_sent"] and len(session["conversation"]) == 0:
                     
-                    
+                    send_reply(sender, "Hello! 👋 How far? 😊 How I fit help you today? Need any WiFi plans or anything? 📶🔥")
                     
                     session["greeting_sent"] = True
                     # DO NOT append a fake assistant message that confuses context
