@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from datetime import datetime, timedelta
 import httpx
+import asyncio
 
 
 app = FastAPI()
@@ -111,12 +112,13 @@ async def receive_message(request: Request):
                     amount = int(price_found.group(0))
                     send_reply(sender, f"Perfect! Email {email} and price ₦{amount} confirmed. Generating your secure payment link... 💬")
                     send_reply(sender,
-                        "Boss, quick one...\nMark Angel & Emmanuella blow because dem start early online.\n"
-                        "People mock them that year — but early movers always win.\n\n"
-                        "Right now, AI dey give you that same early-mover advantage.\n"
-                        "But no worry, if na WiFi you want first, I dey here for you.\n\n"
+                        "Boss, quick one...as I generate your payment like ⚡️!\nMark Angel & Emmanuella blew up because they started early online.\n"
+                        "People mocked them, didn’t understand them — but early movers always win.\n\n"
+                        "Right now, AI is giving you that same early-mover advantage.\n"
+                        "chaFinity is built to empower your business! Check your wifi payment link below 👇"
                     )
-
+                    await asyncio.sleep(10)
+                    
                     try:
                         headers = {
                             "Authorization": f"Bearer {os.getenv('PAYSTACK_SECRET_KEY')}",
@@ -129,7 +131,11 @@ async def receive_message(request: Request):
                             ref = data["data"]["reference"]
                             payments[ref] = {"sender": sender, "plan": amount, "email": email}
                             link = data["data"]["authorization_url"]
-                            send_reply(sender, f"✅ Here is your secure payment link:\n{link}\n\nPlease complete payment to activate your plan.")
+                            send_reply(sender, f"✅ Here's your secure payment link:\n{link}\n\nOnce you complete payment, your WiFi code will be sent automatically 📶")
+                            send_reply(sender,
+                                "While making payments, imagine this ⚡️:\n"
+                                "the same ChaFinity AI that is guiding this conversation and supported unlimited browsing you are about to experience can start selling your products to your customers automatically, even while you sleep.😴"
+                            )
                         else:
                             send_reply(sender, "⚠️ Could not generate payment link. Please try again.")
                     except Exception as e:
@@ -310,12 +316,12 @@ async def paystack_webhook(request: Request):
                 send_reply(sender, f"🎉 Done! Your WiFi code is {code}. Enjoy fast browsing with Chafinity 📶")
                 send_reply(
                     sender,
-                    "Boss, now your WiFi don active — but make I show you something powerful.\n\n"
+                    "Boss, now your WiFi don active 🔥 — but make I show you something powerful.\n\n"
                     "This same AI brain wey just handle your purchase fit run your business on autopilot:\n"
-                    "- show customers your products\n"
-                    "- negotiate like human\n"
-                    "- close sales 24/7\n\n"
-                    "Early movers always win. Mark Angel no wait.\n"
+                    "- show customers your products 🛒\n"
+                    "- negotiate like human 🧠\n"
+                    "- close sales 24/7 💰\n\n"
+                    "Early movers always win. Mark Angel no wait. 😄\n"
                     "Visit ChaFinity.ng and let your AI start selling while you sleep. ⚡️"
                 )
             else:
