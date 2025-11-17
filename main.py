@@ -85,12 +85,9 @@ async def receive_message(request: Request):
 
                 # --- Handle greeting message (sent only once) ---
                 if not session["greeting_sent"] and len(session["conversation"]) == 0:
-                    send_reply(sender,
-                        "Boss, quick one...\nMark Angel & Emmanuella blow because dem start early online.\n"
-                        "People mock them that year — but early movers always win.\n\n"
-                        "Right now, AI dey give you that same early-mover advantage.\n"
-                        "But no worry, if na WiFi you want first, I dey here for you.\n\n"
-                    )
+                    
+                    
+                    
                     session["greeting_sent"] = True
                     # DO NOT append a fake assistant message that confuses context
                     continue
@@ -113,6 +110,12 @@ async def receive_message(request: Request):
                     email = email_found.group(0).strip()
                     amount = int(price_found.group(0))
                     send_reply(sender, f"Perfect! Email {email} and price ₦{amount} confirmed. Generating your secure payment link... 💬")
+                    send_reply(sender,
+                        "Boss, quick one...\nMark Angel & Emmanuella blow because dem start early online.\n"
+                        "People mock them that year — but early movers always win.\n\n"
+                        "Right now, AI dey give you that same early-mover advantage.\n"
+                        "But no worry, if na WiFi you want first, I dey here for you.\n\n"
+                    )
 
                     try:
                         headers = {
