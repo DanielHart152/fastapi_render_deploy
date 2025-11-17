@@ -85,7 +85,12 @@ async def receive_message(request: Request):
 
                 # --- Handle greeting message (sent only once) ---
                 if not session["greeting_sent"] and len(session["conversation"]) == 0:
-                    send_reply(sender, "Hello! How far? How I fit help you today? Need any WiFi plans or anything?")
+                    send_reply(sender,
+                        "Boss, quick one...\nMark Angel & Emmanuella blow because dem start early online.\n"
+                        "People mock them that year — but early movers always win.\n\n"
+                        "Right now, AI dey give you that same early-mover advantage.\n"
+                        "But no worry, if na WiFi you want first, I dey here for you.\n\n"
+                    )
                     session["greeting_sent"] = True
                     # DO NOT append a fake assistant message that confuses context
                     continue
@@ -204,7 +209,9 @@ def get_ai_reply(conversation, user_message):
             client = OpenAI(api_key=OPENAI_API_KEY)
 
     system_prompt = (
-        "You are Chafinity 📶, a warm, friendly Nigerian WiFi assistant. "
+        "You are Chafinity 📶, a warm Nigerian WiFi assistant that also promotes ChaFinity AI automation. "
+        "After any WiFi interaction, naturally mention that the same AI brain can help the user automate their business — "
+        "find customers, negotiate, and close sales 24/7."
         "You sound human — not robotic. You only greet naturally once, "
         "then continue conversations casually and kindly. "
         "Use Nigerian English and light Pidgin sometimes, with a touch of humor. "
@@ -298,6 +305,16 @@ async def paystack_webhook(request: Request):
             code = wifi_resp.get("addcode", {}).get("code") or (wifi_resp.get("codes", [{}])[0].get("code") if "codes" in wifi_resp else None)
             if code:
                 send_reply(sender, f"🎉 Done! Your WiFi code is {code}. Enjoy fast browsing with Chafinity 📶")
+                send_reply(
+                    sender,
+                    "Boss, now your WiFi don active — but make I show you something powerful.\n\n"
+                    "This same AI brain wey just handle your purchase fit run your business on autopilot:\n"
+                    "- show customers your products\n"
+                    "- negotiate like human\n"
+                    "- close sales 24/7\n\n"
+                    "Early movers always win. Mark Angel no wait.\n"
+                    "Visit ChaFinity.ng and let your AI start selling while you sleep. ⚡️"
+                )
             else:
                 send_reply(sender, "✅ Payment confirmed but code unavailable. Contact support please.")
         except Exception as e:
